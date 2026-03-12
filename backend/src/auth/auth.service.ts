@@ -57,7 +57,6 @@ export class AuthService {
     email: string;
     name?: string;
     avatarUrl?: string;
-    githubId?: string;
     googleId?: string;
   }) {
     let user = await this.prisma.user.findUnique({

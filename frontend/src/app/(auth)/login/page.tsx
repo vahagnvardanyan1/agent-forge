@@ -4,12 +4,11 @@ import { useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Zap, Github } from "lucide-react";
+import { Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
 
 export default function LoginPage() {
@@ -46,14 +45,6 @@ export default function LoginPage() {
         </Link>
         <h1 className="mt-6 text-2xl font-bold">Welcome back</h1>
         <p className="mt-2 text-sm text-muted-foreground">Sign in to your account</p>
-      </div>
-
-      <div className="space-y-4">
-        <Button variant="outline" className="w-full gap-2">
-          <Github className="h-4 w-4" />
-          Continue with GitHub
-        </Button>
-        <Separator className="my-4" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

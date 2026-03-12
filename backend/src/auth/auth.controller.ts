@@ -31,28 +31,6 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @Get('github')
-  @UseGuards(AuthGuard('github'))
-  @ApiOperation({ summary: 'Initiate GitHub OAuth' })
-  githubAuth() {}
-
-  @Get('github/callback')
-  @UseGuards(AuthGuard('github'))
-  async githubCallback(@Req() req: Request, @Res() res: Response) {
-    const user = req.user as Record<string, unknown>;
-    const profile = user.profile as Record<string, unknown>;
-    const emails = profile.emails as Array<{ value: string }>;
-    const result = await this.authService.validateOAuthUser({
-      email: emails[0].value,
-      name: profile.displayName as string,
-      avatarUrl: (profile.photos as Array<{ value: string }>)?.[0]?.value,
-      githubId: profile.id as string,
-    });
-    res.redirect(
-      `${process.env.FRONTEND_URL}/auth/callback?token=${result.token}`,
-    );
-  }
-
   @Get('google')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Initiate Google OAuth' })

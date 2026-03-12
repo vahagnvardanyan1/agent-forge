@@ -4,12 +4,10 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { GithubOAuthStrategy } from './strategies/github-oauth.strategy';
 import { GoogleOAuthStrategy } from './strategies/google-oauth.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 
 const oauthProviders = [
-  ...(process.env.GITHUB_CLIENT_ID ? [GithubOAuthStrategy] : []),
   ...(process.env.GOOGLE_CLIENT_ID ? [GoogleOAuthStrategy] : []),
 ];
 
