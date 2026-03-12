@@ -1,0 +1,30 @@
+# dependencies
+/node_modules
+
+# build
+/dist
+
+# env
+.env
+.env.*
+!.env.example
+
+# prisma
+/prisma/migrations/**/migration_lock.toml
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# typescript
+*.tsbuildinfo
+
+# IDE
+.vscode
+.idea

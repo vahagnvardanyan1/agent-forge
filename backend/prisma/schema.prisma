@@ -1,0 +1,288 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  DEVELOPER
+}
+
+enum AgentStatus {
+  DRAFT
+  ACTIVE
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AIProvider {
+  ANTHROPIC
+  OPENAI
+  GOOGLE
+  CUSTOM
+}
+
+enum IntegrationType {
+  GITHUB
+  JIRA
+  VERCEL
+  TELEGRAM
+  ZAPIER
+  SLACK
+  DISCORD
+  WEBHOOK
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  avatarUrl     String?
+  role          Role      @default(USER)
+
+  githubId      String?   @unique
+  googleId      String?   @unique
+
+  agents        Agent[]
+  executions    Execution[]
+  reviews       Review[]
+  integrations  UserIntegration[]
+  knowledgeBases KnowledgeBase[]
+  apiKeys       ApiKey[]
+  workforces    Workforce[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Agent {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique
+  description     String
+  systemPrompt    String       @db.Text
+  avatarSeed      String       @default(cuid())
+  status          AgentStatus  @default(DRAFT)
+
+  provider        AIProvider   @default(OPENAI)
+  model           String       @default("gpt-4o")
+  temperature     Float        @default(0.7)
+  maxTokens       Int          @default(4096)
+
+  flowConfig      Json?
+
+  tools           AgentTool[]
+  knowledgeBases  AgentKnowledge[]
+
+  isPublished     Boolean      @default(false)
+  price           Float?       @default(0)
+  category        String?
+  tags            String[]
+  downloads       Int          @default(0)
+  rating          Float        @default(0)
+  reviews         Review[]
+
+  chainType       String?
+  memoryType      String?
+
+  workforces      WorkforceMember[]
+
+  author          User         @relation(fields: [authorId], references: [id])
+  authorId        String
+  executions      Execution[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([authorId])
+  @@index([status])
+  @@index([isPublished])
+}
+
+model AgentTool {
+  id          String          @id @default(cuid())
+  type        IntegrationType
+  config      Json
+
+  agent       Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId     String
+
+  @@index([agentId])
+}
+
+model KnowledgeBase {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+
+  pineconeIndexHost String
+  pineconeNamespace String
+  embeddingModel    String   @default("text-embedding-3-small")
+  documentCount     Int      @default(0)
+  chunkCount        Int      @default(0)
+
+  documents   Document[]
+  agents      AgentKnowledge[]
+
+  owner       User      @relation(fields: [ownerId], references: [id])
+  ownerId     String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ownerId])
+}
+
+model Document {
+  id              String    @id @default(cuid())
+  filename        String
+  mimeType        String
+  sizeBytes       Int
+  chunkCount      Int       @default(0)
+  storageUrl      String
+
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+  knowledgeBaseId String
+
+  createdAt       DateTime  @default(now())
+
+  @@index([knowledgeBaseId])
+}
+
+model AgentKnowledge {
+  agent           Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId         String
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id])
+  knowledgeBaseId String
+
+  @@id([agentId, knowledgeBaseId])
+}
+
+model UserIntegration {
+  id            String          @id @default(cuid())
+  type          IntegrationType
+  accessToken   String          @db.Text
+  refreshToken  String?         @db.Text
+  expiresAt     DateTime?
+  metadata      Json?
+
+  user          User            @relation(fields: [userId], references: [id])
+  userId        String
+
+  @@unique([userId, type])
+  @@index([userId])
+}
+
+model Execution {
+  id          String          @id @default(cuid())
+  status      ExecutionStatus @default(PENDING)
+
+  input       Json
+  output      Json?
+  error       String?
+
+  tokensUsed  Int?
+  costUsd     Float?
+  durationMs  Int?
+  steps       Json?
+
+  agent       Agent           @relation(fields: [agentId], references: [id])
+  agentId     String
+  user        User            @relation(fields: [userId], references: [id])
+  userId      String
+
+  createdAt   DateTime        @default(now())
+  completedAt DateTime?
+
+  @@index([agentId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+
+  createdAt DateTime @default(now())
+
+  @@unique([agentId, userId])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  name      String
+  keyHash   String   @unique
+  prefix    String
+  lastUsed  DateTime?
+
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  flowConfig  Json
+  isTemplate  Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Workforce {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+
+  handoffStrategy  String   @default("sequential")
+  managerAgentId   String?
+  config           Json?
+
+  members     WorkforceMember[]
+  owner       User     @relation(fields: [ownerId], references: [id])
+  ownerId     String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model WorkforceMember {
+  id          String   @id @default(cuid())
+  role        String
+  priority    Int      @default(0)
+
+  agent       Agent    @relation(fields: [agentId], references: [id])
+  agentId     String
+  workforce   Workforce @relation(fields: [workforceId], references: [id], onDelete: Cascade)
+  workforceId String
+
+  @@unique([agentId, workforceId])
+  @@index([workforceId])
+}
