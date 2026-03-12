@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
+import { ChatAnthropic } from '@langchain/anthropic';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type {
   IAIProvider,
   CompletionParams,
   CompletionResult,
+  ChatModelParams,
 } from './base-provider.interface';
 
 @Injectable()
 export class AnthropicProvider implements IAIProvider {
   private client: Anthropic | null = null;
+  private chatModelCache = new Map<string, BaseChatModel>();
 
   private getClient(): Anthropic {
     if (!this.client) {
@@ -74,5 +78,20 @@ export class AnthropicProvider implements IAIProvider {
       'claude-sonnet-4-20250514',
       'claude-haiku-4-5-20251001',
     ];
+  }
+
+  getChatModel(params?: ChatModelParams): BaseChatModel {
+    const key = `${params?.model ?? 'claude-sonnet-4-20250514'}:${params?.temperature ?? 0.7}:${params?.maxTokens ?? 4096}`;
+    let cached = this.chatModelCache.get(key);
+    if (!cached) {
+      cached = new ChatAnthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        model: params?.model ?? 'claude-sonnet-4-20250514',
+        temperature: params?.temperature ?? 0.7,
+        maxTokens: params?.maxTokens ?? 4096,
+      });
+      this.chatModelCache.set(key, cached);
+    }
+    return cached;
   }
 }

@@ -17,30 +17,34 @@ export class LangchainService {
     private readonly vectorMemory: VectorMemory,
   ) {}
 
-  executeRag(query: string, knowledgeBaseId: string, systemPrompt?: string) {
+  async executeRag(
+    query: string,
+    knowledgeBaseId: string,
+    systemPrompt?: string,
+  ) {
     this.logger.log(
       `Executing RAG pipeline for knowledge base ${knowledgeBaseId}`,
     );
     return this.ragRunnable.invoke({ query, knowledgeBaseId, systemPrompt });
   }
 
-  executeConversational(
+  async executeConversational(
     sessionId: string,
     message: string,
     systemPrompt?: string,
   ) {
-    const history = this.bufferMemory.getMessages(sessionId);
-    const result = this.conversationalRunnable.invoke({
+    const history = await this.bufferMemory.getMessages(sessionId);
+    const result = await this.conversationalRunnable.invoke({
       message,
       history: history.map((m) => ({ role: m.role, content: m.content })),
       systemPrompt,
     });
 
-    this.bufferMemory.addMessage(sessionId, {
+    await this.bufferMemory.addMessage(sessionId, {
       role: 'user',
       content: message,
     });
-    this.bufferMemory.addMessage(sessionId, {
+    await this.bufferMemory.addMessage(sessionId, {
       role: 'assistant',
       content: result.response,
     });
@@ -48,7 +52,7 @@ export class LangchainService {
     return result;
   }
 
-  executeRouted(
+  async executeRouted(
     message: string,
     routes: Array<{ name: string; description: string; handler: string }>,
   ) {

@@ -286,3 +286,13 @@ model WorkforceMember {
   @@unique([agentId, workforceId])
   @@index([workforceId])
 }
+
+model ConversationMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}

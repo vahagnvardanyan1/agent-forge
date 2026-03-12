@@ -24,10 +24,13 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       typeof window !== "undefined" &&
-      !window.location.pathname.startsWith("/login")
+      !window.location.pathname.startsWith("/login") &&
+      !window.location.pathname.startsWith("/register")
     ) {
+      // Clear invalid token. The AuthProvider will detect the missing token
+      // and handle the redirect to /login on the next render cycle.
+      // This avoids the jarring hard-redirect that interrupts React state.
       localStorage.removeItem("token");
-      window.location.href = "/login";
     }
     return Promise.reject(error);
   },

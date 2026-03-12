@@ -55,7 +55,7 @@ export class WorkflowsService {
     };
     const nodes = flowConfig.nodes ?? [];
     const edges = flowConfig.edges ?? [];
-    return this.engine.executeWorkflow(nodes, edges, dto.input, dto.variables);
+    return this.engine.executeWorkflow(nodes, edges, dto.input);
   }
 
   async remove(id: string, userId: string) {

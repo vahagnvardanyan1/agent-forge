@@ -45,7 +45,7 @@ export class KnowledgeService {
 
   async uploadDocument(knowledgeBaseId: string, file: Express.Multer.File) {
     const kb = await this.findOne(knowledgeBaseId);
-    const chunks = this.documentLoader.loadAndChunk(
+    const chunks = await this.documentLoader.loadAndChunk(
       file.originalname,
       file.buffer,
       file.mimetype,

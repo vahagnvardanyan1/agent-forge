@@ -1,14 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
+import { ChatOpenAI } from '@langchain/openai';
+import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type {
   IAIProvider,
   CompletionParams,
   CompletionResult,
+  ChatModelParams,
 } from './base-provider.interface';
 
 @Injectable()
 export class OpenAIProvider implements IAIProvider {
   private client: OpenAI | null = null;
+  private chatModelCache = new Map<string, BaseChatModel>();
 
   private getClient(): OpenAI {
     if (!this.client) {
@@ -58,5 +62,20 @@ export class OpenAIProvider implements IAIProvider {
 
   listModels(): string[] {
     return ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+  }
+
+  getChatModel(params?: ChatModelParams): BaseChatModel {
+    const key = `${params?.model ?? 'gpt-4o'}:${params?.temperature ?? 0.7}:${params?.maxTokens ?? 4096}`;
+    let cached = this.chatModelCache.get(key);
+    if (!cached) {
+      cached = new ChatOpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: params?.model ?? 'gpt-4o',
+        temperature: params?.temperature ?? 0.7,
+        maxTokens: params?.maxTokens ?? 4096,
+      });
+      this.chatModelCache.set(key, cached);
+    }
+    return cached;
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Bot,
@@ -25,6 +25,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useAppStore, setAppStore } from "@/store";
+import { useAuth } from "@/components/auth-provider";
 import type { IAppStore } from "@/store";
 
 const sidebarSelector = (store: IAppStore) => ({
@@ -52,11 +53,10 @@ const SidebarContent = ({
   onNavClick?: () => void;
 }) => {
   const pathname = usePathname();
-  const router = useRouter();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    router.push("/login");
+    logout();
   };
 
   return (

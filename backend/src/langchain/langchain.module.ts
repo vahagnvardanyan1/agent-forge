@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { AiProvidersModule } from '../ai-providers/ai-providers.module';
+import { KnowledgeModule } from '../knowledge/knowledge.module';
+import { IntegrationsModule } from '../integrations/integrations.module';
 import { LangchainService } from './langchain.service';
 import { RagRunnable } from './runnables/rag-runnable';
 import { ConversationalRunnable } from './runnables/conversational-runnable';
@@ -12,6 +15,7 @@ import { BufferMemory } from './memory/buffer-memory';
 import { VectorMemory } from './memory/vector-memory';
 
 @Module({
+  imports: [AiProvidersModule, KnowledgeModule, IntegrationsModule],
   providers: [
     LangchainService,
     RagRunnable,
@@ -32,6 +36,8 @@ import { VectorMemory } from './memory/vector-memory';
     ZapierTool,
     WebSearchTool,
     CalculatorTool,
+    BufferMemory,
+    VectorMemory,
   ],
 })
 export class LangchainModule {}

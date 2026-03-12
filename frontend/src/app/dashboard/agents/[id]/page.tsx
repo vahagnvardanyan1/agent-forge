@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 
 import Link from "next/link";
 import { ArrowLeft, Settings, Play, Code, BarChart3 } from "lucide-react";
@@ -10,11 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AgentAvatar } from "@/components/agents/agent-avatar";
+import { ExecuteAgentDialog } from "@/components/agents/execute-agent-dialog";
 import { useAgent } from "@/hooks/use-agents";
 
 export default function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: agent, isLoading, isError } = useAgent(id);
+  const [executeOpen, setExecuteOpen] = useState(false);
 
   if (isLoading && !isError) {
     return (
@@ -72,7 +74,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
             Logs
           </Link>
         </Button>
-        <Button size="sm" className="gap-1">
+        <Button size="sm" className="gap-1" onClick={() => setExecuteOpen(true)}>
           <Play className="h-3.5 w-3.5" />
           Execute
         </Button>
@@ -109,6 +111,13 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 text-sm font-mono">{agent.systemPrompt}</pre>
         </Card>
       </div>
+
+      <ExecuteAgentDialog
+        agentId={id}
+        agentName={agent.name}
+        open={executeOpen}
+        onOpenChange={setExecuteOpen}
+      />
     </div>
   );
 }

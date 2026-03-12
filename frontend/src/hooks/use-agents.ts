@@ -60,3 +60,21 @@ export const useDeleteAgent = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agents"] }),
   });
 };
+
+export interface ExecutionResult {
+  id: string;
+  status: string;
+  output: { response: string } | null;
+  tokensUsed: number | null;
+  costUsd: number | null;
+  durationMs: number | null;
+  error: string | null;
+}
+
+export const useExecuteAgent = (id: string) =>
+  useMutation({
+    mutationFn: async (input: string) => {
+      const { data } = await api.post(`/agents/${id}/execute`, { input });
+      return unwrap(data) as ExecutionResult;
+    },
+  });
