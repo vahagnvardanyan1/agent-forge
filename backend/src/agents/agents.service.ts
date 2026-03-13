@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import type { IntegrationType } from '@prisma/client';
 
 @Injectable()
 export class AgentsService {
@@ -65,5 +66,40 @@ export class AgentsService {
     });
     if (!agent) throw new NotFoundException('Agent not found');
     return this.prisma.agent.delete({ where: { id } });
+  }
+
+  async createFromTemplate(userId: string, templateName: string) {
+    const template = await this.prisma.agentTemplate.findUnique({
+      where: { name: templateName },
+    });
+    if (!template) {
+      throw new NotFoundException(`Template "${templateName}" not found`);
+    }
+
+    const slug = template.name + '-' + Date.now().toString(36);
+
+    const agent = await this.prisma.agent.create({
+      data: {
+        name: template.displayName,
+        slug,
+        description: template.description,
+        systemPrompt: template.systemPrompt,
+        provider: template.provider,
+        model: template.model,
+        temperature: template.temperature,
+        maxTokens: template.maxTokens,
+        status: 'ACTIVE',
+        authorId: userId,
+        tools: {
+          create: template.toolNames.map((toolName) => ({
+            type: 'WEBHOOK' as IntegrationType,
+            config: { toolName },
+          })),
+        },
+      },
+      include: { tools: true },
+    });
+
+    return agent;
   }
 }

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Bot, User } from "lucide-react";
+import { Send, Loader2, Bot, User, FileText, X } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -40,6 +41,8 @@ export function ExecuteAgentDialog({
 }: ExecuteAgentDialogProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [resumeText, setResumeText] = useState("");
+  const [showResume, setShowResume] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { mutate, isPending } = useExecuteAgent(agentId);
 
@@ -56,7 +59,7 @@ export function ExecuteAgentDialog({
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");
 
-    mutate(trimmed, {
+    mutate({ input: trimmed, resumeText: resumeText || undefined }, {
       onSuccess: (result: ExecutionResult) => {
         const content =
           result.status === "COMPLETED" && result.output?.response
@@ -165,7 +168,44 @@ export function ExecuteAgentDialog({
           )}
         </div>
 
-        <div className="flex gap-2 pt-2 border-t">
+        <div className="flex flex-col gap-2 pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setShowResume(!showResume)}
+            >
+              <FileText className="h-3.5 w-3.5 mr-1" />
+              Attach Resume
+            </Button>
+            {resumeText && !showResume && (
+              <Badge variant="secondary" className="text-xs">
+                Resume attached
+                <button
+                  type="button"
+                  onClick={() => setResumeText("")}
+                  className="ml-1 inline-flex items-center"
+                  aria-label="Remove resume"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+          </div>
+          {showResume && (
+            <Textarea
+              value={resumeText}
+              onChange={(e) => setResumeText(e.target.value)}
+              placeholder="Paste your resume text here..."
+              rows={4}
+              className="resize-none text-sm"
+            />
+          )}
+        </div>
+
+        <div className="flex gap-2">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

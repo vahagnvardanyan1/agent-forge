@@ -73,8 +73,19 @@ export interface ExecutionResult {
 
 export const useExecuteAgent = (id: string) =>
   useMutation({
-    mutationFn: async (input: string) => {
-      const { data } = await api.post(`/agents/${id}/execute`, { input });
+    mutationFn: async (payload: { input: string; resumeText?: string }) => {
+      const { data } = await api.post(`/agents/${id}/execute`, payload);
       return unwrap(data) as ExecutionResult;
     },
   });
+
+export const useCreateFromTemplate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (templateName: string) => {
+      const { data } = await api.post(`/agents/templates/${templateName}`);
+      return unwrap(data) as Agent;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["agents"] }),
+  });
+};

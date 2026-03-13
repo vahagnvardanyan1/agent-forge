@@ -11,6 +11,12 @@ import { JiraTool } from './tools/jira-tool';
 import { ZapierTool } from './tools/zapier-tool';
 import { WebSearchTool } from './tools/web-search-tool';
 import { CalculatorTool } from './tools/calculator-tool';
+import { ToolFactoryService } from './tools/tool-factory.service';
+import { HttpStepExecutor } from './tools/steps/http-step.executor';
+import { LlmStepExecutor } from './tools/steps/llm-step.executor';
+import { CodeStepExecutor } from './tools/steps/code-step.executor';
+import { KnowledgeSearchStepExecutor } from './tools/steps/knowledge-search-step.executor';
+import { TransformStepExecutor } from './tools/steps/transform-step.executor';
 import { BufferMemory } from './memory/buffer-memory';
 import { VectorMemory } from './memory/vector-memory';
 
@@ -26,6 +32,12 @@ import { VectorMemory } from './memory/vector-memory';
     ZapierTool,
     WebSearchTool,
     CalculatorTool,
+    ToolFactoryService,
+    HttpStepExecutor,
+    LlmStepExecutor,
+    CodeStepExecutor,
+    KnowledgeSearchStepExecutor,
+    TransformStepExecutor,
     BufferMemory,
     VectorMemory,
   ],
@@ -36,6 +48,7 @@ import { VectorMemory } from './memory/vector-memory';
     ZapierTool,
     WebSearchTool,
     CalculatorTool,
+    ToolFactoryService,
     BufferMemory,
     VectorMemory,
   ],

@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:generate": "prisma generate",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "seed:tools": "ts-node prisma/seed-tools.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

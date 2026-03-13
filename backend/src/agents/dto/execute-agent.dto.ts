@@ -10,4 +10,9 @@ export class ExecuteAgentDto {
   @IsOptional()
   @IsObject()
   context?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ description: 'Resume text to include as context' })
+  @IsOptional()
+  @IsString()
+  resumeText?: string;
 }

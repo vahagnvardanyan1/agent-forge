@@ -31,7 +31,8 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       switch (exception.code) {
         case 'P2002': {
           // Unique constraint violation
-          const target = (exception.meta?.target as string[])?.join(', ') ?? 'field';
+          const target =
+            (exception.meta?.target as string[])?.join(', ') ?? 'field';
           response.status(409).json({
             statusCode: 409,
             message: `A record with this ${target} already exists.`,

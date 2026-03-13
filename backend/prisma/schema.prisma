@@ -296,3 +296,45 @@ model ConversationMessage {
 
   @@index([sessionId])
 }
+
+model ToolDefinition {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  displayName   String
+  description   String   @db.Text
+  category      String   @default("general")
+  icon          String?
+
+  inputSchema   Json
+  steps         Json
+  outputMapping String   @default("{{steps.last.output}}")
+
+  requiresAuth  Boolean  @default(false)
+  authConfig    Json?
+  timeoutMs     Int      @default(30000)
+  isBuiltIn     Boolean  @default(false)
+  isPublic      Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AgentTemplate {
+  id            String     @id @default(cuid())
+  name          String     @unique
+  displayName   String
+  description   String     @db.Text
+  category      String     @default("general")
+  icon          String?
+
+  systemPrompt  String     @db.Text
+  provider      AIProvider @default(OPENAI)
+  model         String     @default("gpt-4o")
+  temperature   Float      @default(0.3)
+  maxTokens     Int        @default(4096)
+
+  toolNames     String[]
+  isPublic      Boolean    @default(true)
+
+  createdAt     DateTime   @default(now())
+}

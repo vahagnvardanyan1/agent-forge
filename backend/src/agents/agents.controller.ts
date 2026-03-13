@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AgentsService } from './agents.service';
 import { AgentExecutorService } from './agent-executor.service';
+import { ToolFactoryService } from '../langchain/tools/tool-factory.service';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
 import { ExecuteAgentDto } from './dto/execute-agent.dto';
@@ -27,7 +28,27 @@ export class AgentsController {
   constructor(
     private readonly agentsService: AgentsService,
     private readonly executorService: AgentExecutorService,
+    private readonly toolFactory: ToolFactoryService,
   ) {}
+
+  @Post('templates/:templateName')
+  @ApiOperation({ summary: 'Create agent from template' })
+  createFromTemplate(
+    @CurrentUser('id') userId: string,
+    @Param('templateName') templateName: string,
+  ) {
+    return this.agentsService.createFromTemplate(userId, templateName);
+  }
+
+  @Post('tools/:toolName/test')
+  @ApiOperation({ summary: 'Test a tool definition' })
+  testTool(
+    @CurrentUser('id') userId: string,
+    @Param('toolName') toolName: string,
+    @Body() body: { input: Record<string, unknown> },
+  ) {
+    return this.toolFactory.testTool(toolName, body.input, userId);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new agent' })
