@@ -78,16 +78,46 @@ export class AgentsService {
 
     const slug = template.name + '-' + Date.now().toString(36);
 
+    // Build system prompt with guardrails appended
+    let systemPrompt = template.systemPrompt;
+    if (template.guardrails) {
+      const guardrails = template.guardrails as {
+        do?: string[];
+        dont?: string[];
+      };
+      const sections: string[] = [];
+      if (guardrails.do?.length) {
+        sections.push(
+          '## Guardrails — Always Do\n' +
+            guardrails.do.map((r) => `- ${r}`).join('\n'),
+        );
+      }
+      if (guardrails.dont?.length) {
+        sections.push(
+          '## Guardrails — Never Do\n' +
+            guardrails.dont.map((r) => `- ${r}`).join('\n'),
+        );
+      }
+      if (sections.length > 0) {
+        systemPrompt += '\n\n' + sections.join('\n\n');
+      }
+    }
+
     const agent = await this.prisma.agent.create({
       data: {
         name: template.displayName,
         slug,
         description: template.description,
-        systemPrompt: template.systemPrompt,
+        systemPrompt,
         provider: template.provider,
         model: template.model,
         temperature: template.temperature,
         maxTokens: template.maxTokens,
+        category: template.category,
+        memoryType: template.memoryType,
+        conversationStarters: template.conversationStarters,
+        guardrails: template.guardrails ?? undefined,
+        templateName: template.name,
         status: 'ACTIVE',
         authorId: userId,
         tools: {
@@ -98,6 +128,12 @@ export class AgentsService {
         },
       },
       include: { tools: true },
+    });
+
+    // Increment usage count on the template
+    await this.prisma.agentTemplate.update({
+      where: { name: templateName },
+      data: { usageCount: { increment: 1 } },
     });
 
     return agent;

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
+import { InterpolationEngine } from '../interpolation-engine.js';
 import type { StepExecutor, StepContext } from './step-executor.interface';
 
 const BLOCKED_IP_PATTERNS = [
@@ -19,6 +20,8 @@ const BLOCKED_IP_PATTERNS = [
 export class HttpStepExecutor implements StepExecutor {
   private readonly logger = new Logger(HttpStepExecutor.name);
 
+  constructor(private readonly interpolationEngine: InterpolationEngine) {}
+
   async execute(
     config: Record<string, unknown>,
     context: StepContext,
@@ -27,7 +30,7 @@ export class HttpStepExecutor implements StepExecutor {
     const rawUrl = config.url as string;
     if (!rawUrl) throw new Error('HTTP step requires a "url" config field');
 
-    const url = this.interpolate(rawUrl, context);
+    const url = this.interpolationEngine.interpolateString(rawUrl, context);
     this.validateUrl(url);
 
     const headers = this.interpolateRecord(
@@ -40,7 +43,10 @@ export class HttpStepExecutor implements StepExecutor {
     );
     const body: Record<string, unknown> | undefined = config.body
       ? (JSON.parse(
-          this.interpolate(JSON.stringify(config.body), context),
+          this.interpolationEngine.interpolateString(
+            JSON.stringify(config.body),
+            context,
+          ),
         ) as Record<string, unknown>)
       : undefined;
     const timeoutMs = (config.timeoutMs as number) ?? 15000;
@@ -60,6 +66,10 @@ export class HttpStepExecutor implements StepExecutor {
     let result: unknown = response.data as unknown;
     if (responseMapping) {
       result = this.resolvePath(responseMapping, result);
+    }
+
+    if (result === undefined || result === null) {
+      return '[]';
     }
 
     return typeof result === 'string' ? result : JSON.stringify(result);
@@ -90,19 +100,6 @@ export class HttpStepExecutor implements StepExecutor {
     }
   }
 
-  private interpolate(template: string, context: StepContext): string {
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const value = this.resolvePath(
-        path.trim(),
-        context as unknown as Record<string, unknown>,
-      );
-      if (value === undefined) return '';
-      return typeof value === 'object'
-        ? JSON.stringify(value)
-        : String(value as string | number | boolean);
-    });
-  }
-
   private interpolateRecord(
     record: Record<string, string>,
     context: StepContext,
@@ -110,7 +107,10 @@ export class HttpStepExecutor implements StepExecutor {
   ): Record<string, string> {
     const result: Record<string, string> = {};
     for (const [key, value] of Object.entries(record)) {
-      const interpolated = this.interpolate(String(value), context);
+      const interpolated = this.interpolationEngine.interpolateString(
+        String(value),
+        context,
+      );
       // Skip params that resolved to empty strings (optional fields not provided)
       if (interpolated === '') continue;
       result[key] = urlEncode ? encodeURIComponent(interpolated) : interpolated;

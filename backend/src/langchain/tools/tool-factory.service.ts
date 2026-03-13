@@ -5,6 +5,7 @@ import type { StructuredToolInterface } from '@langchain/core/tools';
 import type { ToolDefinition, UserIntegration } from '@prisma/client';
 import { z } from 'zod';
 import { jsonSchemaToZod } from './json-schema-to-zod';
+import { InterpolationEngine } from './interpolation-engine.js';
 import type {
   StepExecutor,
   StepContext,
@@ -41,6 +42,7 @@ export class ToolFactoryService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly interpolationEngine: InterpolationEngine,
     private readonly httpStepExecutor: HttpStepExecutor,
     private readonly llmStepExecutor: LlmStepExecutor,
     private readonly codeStepExecutor: CodeStepExecutor,
@@ -122,7 +124,10 @@ export class ToolFactoryService {
           throw new Error(`Unknown step type: ${step.type}`);
         }
 
-        const resolvedConfig = this.interpolateConfig(step.config, context);
+        const resolvedConfig = this.interpolationEngine.interpolateConfig(
+          step.config,
+          context,
+        );
         const stepStart = Date.now();
 
         try {
@@ -155,7 +160,10 @@ export class ToolFactoryService {
         }
       }
 
-      const output = this.interpolateString(def.outputMapping, context);
+      const output = this.interpolationEngine.interpolateString(
+        def.outputMapping,
+        context,
+      );
       return { success: true, output, steps: stepResults };
     } catch (error) {
       return {
@@ -196,7 +204,10 @@ export class ToolFactoryService {
         throw new Error(`Unknown step type: ${step.type}`);
       }
 
-      const resolvedConfig = this.interpolateConfig(step.config, context);
+      const resolvedConfig = this.interpolationEngine.interpolateConfig(
+        step.config,
+        context,
+      );
       const timeoutMs = (step.config.timeoutMs as number | undefined) ?? 15_000;
 
       try {
@@ -218,69 +229,10 @@ export class ToolFactoryService {
       }
     }
 
-    return this.interpolateString(def.outputMapping, context);
-  }
-
-  private interpolateString(template: string, context: StepContext): string {
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const trimmed = path.trim();
-
-      // Handle {{steps.last.output}} — returns the last step's output
-      if (trimmed === 'steps.last.output') {
-        const stepKeys = Object.keys(context.steps);
-        if (stepKeys.length === 0) return '';
-        const lastKey = stepKeys[stepKeys.length - 1];
-        return context.steps[lastKey]?.output ?? '';
-      }
-
-      const value = this.resolvePath(
-        trimmed,
-        context as unknown as Record<string, unknown>,
-      );
-      if (value === undefined) return '';
-      return typeof value === 'object'
-        ? JSON.stringify(value)
-        : String(value as string | number | boolean);
-    });
-  }
-
-  private interpolateConfig(
-    config: Record<string, unknown>,
-    context: StepContext,
-  ): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
-
-    for (const [key, value] of Object.entries(config)) {
-      if (typeof value === 'string') {
-        result[key] = this.interpolateString(value, context);
-      } else if (
-        value !== null &&
-        typeof value === 'object' &&
-        !Array.isArray(value)
-      ) {
-        result[key] = this.interpolateConfig(
-          value as Record<string, unknown>,
-          context,
-        );
-      } else if (Array.isArray(value)) {
-        result[key] = (value as unknown[]).map((item: unknown) => {
-          if (typeof item === 'string') {
-            return this.interpolateString(item, context);
-          }
-          if (item !== null && typeof item === 'object') {
-            return this.interpolateConfig(
-              item as Record<string, unknown>,
-              context,
-            );
-          }
-          return item;
-        });
-      } else {
-        result[key] = value;
-      }
-    }
-
-    return result;
+    return this.interpolationEngine.interpolateString(
+      def.outputMapping,
+      context,
+    );
   }
 
   private resolveAllAuth(
@@ -340,12 +292,5 @@ export class ToolFactoryService {
     const schema = jsonSchemaToZod(def.inputSchema as Record<string, unknown>);
     this.schemaCache.set(def.id, { schema, updatedAt: def.updatedAt });
     return schema;
-  }
-
-  private resolvePath(path: string, obj: unknown): unknown {
-    return path.split('.').reduce<unknown>((current, key) => {
-      if (current == null || typeof current !== 'object') return undefined;
-      return (current as Record<string, unknown>)[key];
-    }, obj);
   }
 }

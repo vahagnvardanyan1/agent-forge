@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { KnowledgeService } from '../../../knowledge/knowledge.service';
+import { InterpolationEngine } from '../interpolation-engine.js';
 import type { StepExecutor, StepContext } from './step-executor.interface';
 
 @Injectable()
 export class KnowledgeSearchStepExecutor implements StepExecutor {
   private readonly logger = new Logger(KnowledgeSearchStepExecutor.name);
 
-  constructor(private readonly knowledgeService: KnowledgeService) {}
+  constructor(
+    private readonly knowledgeService: KnowledgeService,
+    private readonly interpolationEngine: InterpolationEngine,
+  ) {}
 
   async execute(
     config: Record<string, unknown>,
@@ -20,7 +24,10 @@ export class KnowledgeSearchStepExecutor implements StepExecutor {
     }
 
     const queryTemplate = (config.query as string) ?? '{{input.query}}';
-    const query = this.interpolate(queryTemplate, context);
+    const query = this.interpolationEngine.interpolateString(
+      queryTemplate,
+      context,
+    );
     const topK = (config.topK as number) ?? 5;
 
     this.logger.log(
@@ -45,25 +52,5 @@ export class KnowledgeSearchStepExecutor implements StepExecutor {
       });
 
     return texts.join('\n\n---\n\n');
-  }
-
-  private interpolate(template: string, context: StepContext): string {
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const value = this.resolvePath(
-        path.trim(),
-        context as unknown as Record<string, unknown>,
-      );
-      if (value === undefined) return '';
-      return typeof value === 'object'
-        ? JSON.stringify(value)
-        : String(value as string | number | boolean);
-    });
-  }
-
-  private resolvePath(path: string, obj: Record<string, unknown>): unknown {
-    return path.split('.').reduce<unknown>((current, key) => {
-      if (current == null || typeof current !== 'object') return undefined;
-      return (current as Record<string, unknown>)[key];
-    }, obj);
   }
 }

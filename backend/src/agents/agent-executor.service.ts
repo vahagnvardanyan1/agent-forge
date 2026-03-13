@@ -119,8 +119,20 @@ export class AgentExecutorService {
 
       const messages: BaseMessage[] = [
         new SystemMessage(systemPromptWithGuardrail),
-        new HumanMessage(safeInput),
       ];
+
+      // Insert conversation history from context
+      const history = dto.context?.history;
+      if (Array.isArray(history)) {
+        for (const msg of history) {
+          if (msg.role === 'user')
+            messages.push(new HumanMessage(String(msg.content)));
+          else if (msg.role === 'assistant')
+            messages.push(new AIMessage(String(msg.content)));
+        }
+      }
+
+      messages.push(new HumanMessage(safeInput));
 
       // Fix #18: Track input and output tokens separately
       const tokenUsage: TokenUsage = { inputTokens: 0, outputTokens: 0 };

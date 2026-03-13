@@ -99,6 +99,10 @@ model Agent {
   chainType       String?
   memoryType      String?
 
+  conversationStarters String[]
+  guardrails      Json?
+  templateName    String?
+
   workforces      WorkforceMember[]
 
   author          User         @relation(fields: [authorId], references: [id])
@@ -200,7 +204,7 @@ model Execution {
   durationMs  Int?
   steps       Json?
 
-  agent       Agent           @relation(fields: [agentId], references: [id])
+  agent       Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
   agentId     String
   user        User            @relation(fields: [userId], references: [id])
   userId      String
@@ -278,7 +282,7 @@ model WorkforceMember {
   role        String
   priority    Int      @default(0)
 
-  agent       Agent    @relation(fields: [agentId], references: [id])
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
   agentId     String
   workforce   Workforce @relation(fields: [workforceId], references: [id], onDelete: Cascade)
   workforceId String
@@ -320,21 +324,31 @@ model ToolDefinition {
 }
 
 model AgentTemplate {
-  id            String     @id @default(cuid())
-  name          String     @unique
-  displayName   String
-  description   String     @db.Text
-  category      String     @default("general")
-  icon          String?
+  id                  String     @id @default(cuid())
+  name                String     @unique
+  displayName         String
+  description         String     @db.Text
+  longDescription     String?    @db.Text
+  category            String     @default("general")
+  icon                String?
+  color               String?
 
-  systemPrompt  String     @db.Text
-  provider      AIProvider @default(OPENAI)
-  model         String     @default("gpt-4o")
-  temperature   Float      @default(0.3)
-  maxTokens     Int        @default(4096)
+  systemPrompt        String     @db.Text
+  provider            AIProvider @default(OPENAI)
+  model               String     @default("gpt-4o")
+  temperature         Float      @default(0.3)
+  maxTokens           Int        @default(4096)
 
-  toolNames     String[]
-  isPublic      Boolean    @default(true)
+  toolNames           String[]
+  conversationStarters String[]
+  guardrails          Json?
+  difficulty          String     @default("beginner")
+  requiredEnvVars     String[]
+  memoryType          String?
+  tags                String[]
+  sortOrder           Int        @default(0)
+  usageCount          Int        @default(0)
+  isPublic            Boolean    @default(true)
 
-  createdAt     DateTime   @default(now())
+  createdAt           DateTime   @default(now())
 }

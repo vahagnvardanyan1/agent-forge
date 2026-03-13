@@ -1,22 +1,42 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 
 import Link from "next/link";
-import { ArrowLeft, Settings, Play, Code, BarChart3 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Settings, Play, Code, BarChart3, Trash2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { AgentAvatar } from "@/components/agents/agent-avatar";
 import { ExecuteAgentDialog } from "@/components/agents/execute-agent-dialog";
-import { useAgent } from "@/hooks/use-agents";
+import { useAgent, useDeleteAgent } from "@/hooks/use-agents";
 
 export default function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: agent, isLoading, isError } = useAgent(id);
   const [executeOpen, setExecuteOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { mutate: deleteAgent, isPending: isDeleting } = useDeleteAgent();
+
+  // Auto-open chat when redirected from template creation
+  useEffect(() => {
+    if (searchParams.get("chat") === "true" && agent?.name) {
+      setExecuteOpen(true);
+    }
+  }, [searchParams, agent?.name]);
 
   if (isLoading && !isError) {
     return (
@@ -51,6 +71,12 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           <div className="flex items-center gap-2 mt-1">
             <Badge>{agent.status?.toLowerCase() ?? "draft"}</Badge>
             <span className="text-sm text-muted-foreground">{agent.provider} / {agent.model}</span>
+            {agent.templateName && (
+              <Badge variant="secondary" className="gap-1">
+                <Sparkles className="h-3 w-3" />
+                {agent.templateName.replace(/-/g, " ")}
+              </Badge>
+            )}
           </div>
         </div>
       </div>
@@ -77,6 +103,10 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
         <Button size="sm" className="gap-1" onClick={() => setExecuteOpen(true)}>
           <Play className="h-3.5 w-3.5" />
           Execute
+        </Button>
+        <Button variant="destructive" size="sm" className="gap-1 ml-auto" onClick={() => setDeleteOpen(true)}>
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete
         </Button>
       </div>
 
@@ -117,7 +147,35 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
         agentName={agent.name}
         open={executeOpen}
         onOpenChange={setExecuteOpen}
+        conversationStarters={agent.conversationStarters}
       />
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Agent</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <strong>{agent.name}</strong>? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                deleteAgent(id, {
+                  onSuccess: () => router.push("/dashboard/agents"),
+                });
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,13 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { AiProvidersService } from '../../../ai-providers/ai-providers.service';
+import { InterpolationEngine } from '../interpolation-engine.js';
 import type { StepExecutor, StepContext } from './step-executor.interface';
 
 @Injectable()
 export class LlmStepExecutor implements StepExecutor {
   private readonly logger = new Logger(LlmStepExecutor.name);
 
-  constructor(private readonly aiProviders: AiProvidersService) {}
+  constructor(
+    private readonly aiProviders: AiProvidersService,
+    private readonly interpolationEngine: InterpolationEngine,
+  ) {}
 
   async execute(
     config: Record<string, unknown>,
@@ -24,9 +28,12 @@ export class LlmStepExecutor implements StepExecutor {
     const temperature = config.temperature as number | undefined;
     const maxTokens = config.maxTokens as number | undefined;
 
-    const interpolatedUser = this.interpolate(userPrompt, context);
+    const interpolatedUser = this.interpolationEngine.interpolateString(
+      userPrompt,
+      context,
+    );
     const interpolatedSystem = systemPrompt
-      ? this.interpolate(systemPrompt, context)
+      ? this.interpolationEngine.interpolateString(systemPrompt, context)
       : undefined;
 
     this.logger.log(
@@ -50,25 +57,5 @@ export class LlmStepExecutor implements StepExecutor {
         : JSON.stringify(response.content);
 
     return content;
-  }
-
-  private interpolate(template: string, context: StepContext): string {
-    return template.replace(/\{\{(.+?)\}\}/g, (_match, path: string) => {
-      const value = this.resolvePath(
-        path.trim(),
-        context as unknown as Record<string, unknown>,
-      );
-      if (value === undefined) return '';
-      return typeof value === 'object'
-        ? JSON.stringify(value)
-        : String(value as string | number | boolean);
-    });
-  }
-
-  private resolvePath(path: string, obj: Record<string, unknown>): unknown {
-    return path.split('.').reduce<unknown>((current, key) => {
-      if (current == null || typeof current !== 'object') return undefined;
-      return (current as Record<string, unknown>)[key];
-    }, obj);
   }
 }

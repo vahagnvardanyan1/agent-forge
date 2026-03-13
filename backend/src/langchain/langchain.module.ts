@@ -12,6 +12,7 @@ import { ZapierTool } from './tools/zapier-tool';
 import { WebSearchTool } from './tools/web-search-tool';
 import { CalculatorTool } from './tools/calculator-tool';
 import { ToolFactoryService } from './tools/tool-factory.service';
+import { InterpolationEngine } from './tools/interpolation-engine';
 import { HttpStepExecutor } from './tools/steps/http-step.executor';
 import { LlmStepExecutor } from './tools/steps/llm-step.executor';
 import { CodeStepExecutor } from './tools/steps/code-step.executor';
@@ -33,6 +34,7 @@ import { VectorMemory } from './memory/vector-memory';
     WebSearchTool,
     CalculatorTool,
     ToolFactoryService,
+    InterpolationEngine,
     HttpStepExecutor,
     LlmStepExecutor,
     CodeStepExecutor,
@@ -49,6 +51,7 @@ import { VectorMemory } from './memory/vector-memory';
     WebSearchTool,
     CalculatorTool,
     ToolFactoryService,
+    InterpolationEngine,
     BufferMemory,
     VectorMemory,
   ],

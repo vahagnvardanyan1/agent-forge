@@ -22,6 +22,9 @@ export interface Agent {
   rating: number;
   chainType: string | null;
   memoryType: string | null;
+  conversationStarters: string[];
+  guardrails: { do?: string[]; dont?: string[] } | null;
+  templateName: string | null;
   authorId: string;
   createdAt: string;
   updatedAt: string;

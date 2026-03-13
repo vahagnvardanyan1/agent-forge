@@ -15,6 +15,8 @@ import { OrchestrationModule } from './orchestration/orchestration.module';
 import { ExecutionModule } from './execution/execution.module';
 import { BillingModule } from './billing/billing.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ToolsModule } from './tools/tools.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ExecutionModule,
     BillingModule,
     AnalyticsModule,
+    ToolsModule,
+    TemplatesModule,
   ],
 })
 export class AppModule {}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Bot, User, FileText, X } from "lucide-react";
+import { Send, Loader2, Bot, User, FileText, X, MessageCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ interface ExecuteAgentDialogProps {
   agentName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  conversationStarters?: string[];
 }
 
 export function ExecuteAgentDialog({
@@ -38,6 +39,7 @@ export function ExecuteAgentDialog({
   agentName,
   open,
   onOpenChange,
+  conversationStarters,
 }: ExecuteAgentDialogProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -56,10 +58,20 @@ export function ExecuteAgentDialog({
     const trimmed = input.trim();
     if (!trimmed || isPending) return;
 
+    // Build conversation history from existing messages before adding the new one
+    const history = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");
 
-    mutate({ input: trimmed, resumeText: resumeText || undefined }, {
+    mutate({
+      input: trimmed,
+      resumeText: resumeText || undefined,
+      context: history.length > 0 ? { history } : undefined,
+    }, {
       onSuccess: (result: ExecutionResult) => {
         const content =
           result.status === "COMPLETED" && result.output?.response
@@ -112,7 +124,76 @@ export function ExecuteAgentDialog({
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
               <Bot className="h-10 w-10 mb-2 opacity-50" />
-              <p className="text-sm">Send a message to get started</p>
+              <p className="text-sm mb-4">Send a message to get started</p>
+              {conversationStarters && conversationStarters.length > 0 && (
+                <div className="flex flex-col gap-2 w-full max-w-md">
+                  {conversationStarters.map((starter, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left hover:bg-muted transition-colors text-foreground"
+                      onClick={() => {
+                        setInput(starter);
+                        // Auto-send: set input then trigger send on next tick
+                        setTimeout(() => {
+                          const syntheticInput = starter;
+                          const history = messages.map((msg) => ({
+                            role: msg.role,
+                            content: msg.content,
+                          }));
+                          setMessages((prev) => [
+                            ...prev,
+                            { role: "user", content: syntheticInput },
+                          ]);
+                          setInput("");
+                          mutate(
+                            {
+                              input: syntheticInput,
+                              resumeText: resumeText || undefined,
+                              context:
+                                history.length > 0 ? { history } : undefined,
+                            },
+                            {
+                              onSuccess: (result: ExecutionResult) => {
+                                const content =
+                                  result.status === "COMPLETED" &&
+                                  result.output?.response
+                                    ? result.output.response
+                                    : result.error ?? "No response received.";
+                                setMessages((prev) => [
+                                  ...prev,
+                                  {
+                                    role: "assistant",
+                                    content,
+                                    meta: {
+                                      tokens: result.tokensUsed,
+                                      cost: result.costUsd,
+                                      durationMs: result.durationMs,
+                                    },
+                                  },
+                                ]);
+                              },
+                              onError: (error: Error) => {
+                                setMessages((prev) => [
+                                  ...prev,
+                                  {
+                                    role: "assistant",
+                                    content: `Error: ${error.message}`,
+                                  },
+                                ]);
+                              },
+                            },
+                          );
+                        }, 0);
+                      }}
+                      disabled={isPending}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                      {starter}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

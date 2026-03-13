@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   Zap,
   LogOut,
+  Wrench,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { label: "My Agents", href: "/dashboard/agents", icon: Bot },
   { label: "Marketplace", href: "/dashboard/marketplace", icon: Store },
   { label: "Knowledge", href: "/dashboard/knowledge", icon: Database },
+  { label: "Tools", href: "/dashboard/tools", icon: Wrench },
   { label: "Workflows", href: "/dashboard/workflows", icon: GitBranch },
   { label: "Workforce", href: "/dashboard/workforce", icon: Users },
   { label: "Integrations", href: "/dashboard/integrations", icon: Puzzle },

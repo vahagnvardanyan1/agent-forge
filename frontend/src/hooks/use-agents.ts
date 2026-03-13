@@ -73,7 +73,11 @@ export interface ExecutionResult {
 
 export const useExecuteAgent = (id: string) =>
   useMutation({
-    mutationFn: async (payload: { input: string; resumeText?: string }) => {
+    mutationFn: async (payload: {
+      input: string;
+      resumeText?: string;
+      context?: { history?: Array<{ role: string; content: string }> };
+    }) => {
       const { data } = await api.post(`/agents/${id}/execute`, payload);
       return unwrap(data) as ExecutionResult;
     },
